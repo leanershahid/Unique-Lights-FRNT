@@ -1,0 +1,189 @@
+@import "tailwindcss";
+
+/*
+  Unique Lights design tokens.
+  Two themes: "dark" (Evening, default) and "light" (Daylight), switched with [data-theme] on <html>.
+  Components use the semantic Tailwind colours below (bg-surface, text-ink, border-line, text-brass...).
+*/
+:root,
+[data-theme="dark"] {
+  --ul-bg: #120f13;
+  --ul-surface: #1b161b;
+  --ul-surface-2: #241e24;
+  --ul-ink: #f4ece1;
+  --ul-muted: #b3a79a;
+  --ul-subtle: #857a72;
+  --ul-line: rgb(244 236 225 / 0.12);
+  --ul-line-strong: rgb(244 236 225 / 0.24);
+  --ul-brass: #dca561;
+  --ul-brass-strong: #e9b877;
+  --ul-on-brass: #1a1208;
+  --ul-glow: rgb(220 165 97 / 0.45);
+  --ul-success: #7fc79a;
+  --ul-danger: #f08a7e;
+  --ul-warning: #f0c36b;
+  --ul-overlay: rgb(10 8 10 / 0.62);
+  --ul-glass: rgb(27 22 27 / 0.72);
+  color-scheme: dark;
+}
+
+[data-theme="light"] {
+  --ul-bg: #f7f2ea;
+  --ul-surface: #fffcf7;
+  --ul-surface-2: #efe7db;
+  --ul-ink: #1d1714;
+  --ul-muted: #6a5d52;
+  --ul-subtle: #8f8277;
+  --ul-line: rgb(29 23 20 / 0.12);
+  --ul-line-strong: rgb(29 23 20 / 0.24);
+  --ul-brass: #a8702c;
+  --ul-brass-strong: #8f5d20;
+  --ul-on-brass: #fffaf2;
+  --ul-glow: rgb(168 112 44 / 0.28);
+  --ul-success: #2f7d4f;
+  --ul-danger: #b4402f;
+  --ul-warning: #9a6a0c;
+  --ul-overlay: rgb(29 23 20 / 0.45);
+  --ul-glass: rgb(255 252 247 / 0.78);
+  color-scheme: light;
+}
+
+@theme inline {
+  --color-bg: var(--ul-bg);
+  --color-surface: var(--ul-surface);
+  --color-surface-2: var(--ul-surface-2);
+  --color-ink: var(--ul-ink);
+  --color-muted: var(--ul-muted);
+  --color-subtle: var(--ul-subtle);
+  --color-line: var(--ul-line);
+  --color-line-strong: var(--ul-line-strong);
+  --color-brass: var(--ul-brass);
+  --color-brass-strong: var(--ul-brass-strong);
+  --color-on-brass: var(--ul-on-brass);
+  --color-glow: var(--ul-glow);
+  --color-success: var(--ul-success);
+  --color-danger: var(--ul-danger);
+  --color-warning: var(--ul-warning);
+  --color-overlay: var(--ul-overlay);
+  --color-glass: var(--ul-glass);
+}
+
+@theme {
+  --font-display: "Marcellus", "Cormorant Garamond", Georgia, serif;
+  --font-sans: "Manrope", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, Consolas, monospace;
+
+  --radius-card: 14px;
+  --radius-media: 10px;
+
+  --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  --animate-shimmer: shimmer 1.6s linear infinite;
+  --animate-breathe: breathe 3.6s ease-in-out infinite;
+
+  @keyframes shimmer {
+    from { background-position: -200% 0; }
+    to { background-position: 200% 0; }
+  }
+  @keyframes breathe {
+    50% { box-shadow: 0 0 22px 7px var(--ul-glow); }
+  }
+}
+
+@layer base {
+  html {
+    -webkit-tap-highlight-color: transparent;
+    scroll-padding-top: 96px;
+  }
+  body {
+    background: var(--ul-bg);
+    color: var(--ul-ink);
+    font-family: var(--font-sans);
+    font-size: 16px;
+    line-height: 1.6;
+    overflow-x: clip;
+    -webkit-font-smoothing: antialiased;
+    transition: background-color 0.3s ease, color 0.3s ease;
+  }
+  h1, h2, h3, h4 {
+    font-family: var(--font-display);
+    font-weight: 400;
+    line-height: 1.1;
+    text-wrap: balance;
+  }
+  :focus-visible {
+    outline: 2px solid var(--ul-brass);
+    outline-offset: 3px;
+  }
+  ::selection {
+    background: var(--ul-brass);
+    color: var(--ul-on-brass);
+  }
+  img {
+    max-width: 100%;
+  }
+  /* A grid without explicit columns has one implicit `auto` column that grows to its widest child,
+     which pushes content off narrow phones. Make that single column shrinkable instead. */
+  .grid:not([class*="grid-cols"]) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  /* iOS Safari zooms the page when a focused field's text is under 16px. */
+  @media (max-width: 639px) {
+    input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+    select,
+    textarea {
+      font-size: 16px;
+    }
+  }
+  input[type="number"]::-webkit-inner-spin-button,
+  input[type="number"]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+}
+
+@layer components {
+  .eyebrow {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--ul-brass);
+  }
+  .container-page {
+    width: 100%;
+    max-width: 1320px;
+    margin-inline: auto;
+    padding-inline: clamp(16px, 4vw, 48px);
+  }
+  .skeleton {
+    background: linear-gradient(90deg, var(--ul-surface) 0%, var(--ul-surface-2) 50%, var(--ul-surface) 100%);
+    background-size: 200% 100%;
+    animation: var(--animate-shimmer);
+    border-radius: 8px;
+  }
+  .glass {
+    background: var(--ul-glass);
+    backdrop-filter: blur(14px) saturate(1.2);
+    -webkit-backdrop-filter: blur(14px) saturate(1.2);
+  }
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+  .scrollbar-none {
+    scrollbar-width: none;
+  }
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

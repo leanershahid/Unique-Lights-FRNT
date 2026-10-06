@@ -1,0 +1,11 @@
+// Public hook surface. Feature hooks live next to their feature and are re-exported here.
+export { useCart, useAddToCart, useUpdateCartItem, useRemoveCartItem } from '@/features/cart/hooks'
+export { useCategories, useCategory } from '@/features/categories/hooks'
+export { useLogin, useLogout, useRegister } from '@/features/auth/hooks'
+export { useOrders, useOrder, useCreateOrder, useCancelOrder, useCheckoutQuote } from '@/features/orders/hooks'
+export { useProducts, useProduct, useProductFilters, useRelatedProducts, useSearchSuggestions } from '@/features/products/hooks'
+export { useWishlist, useToggleWishlist, useIsWishlisted } from '@/features/wishlist/hooks'
+export { useAdminProducts, useAdminDashboard } from '@/features/admin/hooks'
+export { useDebounce } from './useDebounce'
+export { useMediaQuery, useIsDesktop, useCanHover } from './useMediaQuery'
+export { useToast } from './useToast'
