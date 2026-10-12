@@ -5,17 +5,19 @@ import { Drawer } from '@/components/ui/Overlay'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { EmptyState } from '@/components/ui/States'
 import { useCart } from '@/features/cart/hooks'
+import { useStoreSettings } from '@/features/store/hooks'
 import { useAppDispatch, useAppSelector } from '@/store/hooks'
 import { setCartOpen } from '@/store/slices/uiSlice'
 import { formatMoney, formatPrice } from '@/utils/format'
 import { CartLine } from './CartLine'
 
-/** Mirrors the backend's default free-shipping rule; the server is the source of truth at checkout. */
-export const FREE_SHIPPING_THRESHOLD = 2000
-
+/** Progress towards free delivery. The threshold comes from the store settings API. */
 export function FreeShippingMeter({ subtotal }: { subtotal: number }) {
-  const remaining = Math.max(0, FREE_SHIPPING_THRESHOLD - subtotal)
-  const pct = Math.min(100, (subtotal / FREE_SHIPPING_THRESHOLD) * 100)
+  const { data: store } = useStoreSettings()
+  if (!store || store.freeShippingThreshold <= 0) return null
+  const threshold = store.freeShippingThreshold
+  const remaining = Math.max(0, threshold - subtotal)
+  const pct = Math.min(100, (subtotal / threshold) * 100)
   return (
     <div className="rounded-xl bg-surface-2 p-3.5">
       <p className="flex items-center gap-2 text-[0.85rem] text-muted">

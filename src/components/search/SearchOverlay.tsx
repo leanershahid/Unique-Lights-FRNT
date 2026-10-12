@@ -6,15 +6,13 @@ import { Link, useNavigate } from 'react-router-dom'
 import { staggerContainer, staggerItem } from '@/animations/variants'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { useCategories } from '@/features/categories/hooks'
-import { useSearchSuggestions } from '@/features/products/hooks'
+import { useProducts, useSearchSuggestions } from '@/features/products/hooks'
 import { useDebounce } from '@/hooks/useDebounce'
 import { useLockBodyScroll } from '@/hooks/useLockBodyScroll'
 import { useAppDispatch, useAppSelector } from '@/store/hooks'
 import { recentSearchAdded, recentSearchesCleared } from '@/store/slices/preferencesSlice'
 import { setSearchOpen } from '@/store/slices/uiSlice'
 import { formatPrice } from '@/utils/format'
-
-const POPULAR = ['Brass pendant', 'Crystal chandelier', 'Wall sconce', 'Floor lamp', 'Warm white 2700K']
 
 /** Full-width search panel: expands from the top, dims the page, focuses the field, shows suggestions as you type. */
 export function SearchOverlay() {
@@ -27,6 +25,8 @@ export function SearchOverlay() {
   const inputRef = useRef<HTMLInputElement>(null)
   const { data, isFetching } = useSearchSuggestions(debounced)
   const { data: categories } = useCategories()
+  // "Popular" is the store's own bestsellers list from the API.
+  const { data: popular } = useProducts({ featured: true, sort: 'featured', pageSize: 5 })
   useLockBodyScroll(open)
 
   const close = () => dispatch(setSearchOpen(false))
@@ -87,7 +87,7 @@ export function SearchOverlay() {
                   ref={inputRef}
                   value={term}
                   onChange={(e) => setTerm(e.target.value)}
-                  placeholder="Search pendants, chandeliers, finishes…"
+                  placeholder="Search lights, finishes, brands…"
                   aria-label="Search products"
                   className="min-w-0 flex-1 bg-transparent font-display text-[clamp(1.4rem,4vw,2.4rem)] text-ink outline-none placeholder:text-subtle"
                   autoComplete="off"
@@ -177,16 +177,18 @@ export function SearchOverlay() {
                           </div>
                         </motion.div>
                       )}
-                      <motion.div variants={staggerItem}>
-                        <p className="eyebrow mb-3">Popular</p>
-                        <div className="flex flex-wrap gap-2">
-                          {POPULAR.map((r) => (
-                            <button key={r} type="button" className={chip} onClick={() => submit(r)}>
-                              <TrendingUp size={13} /> {r}
-                            </button>
-                          ))}
-                        </div>
-                      </motion.div>
+                      {popular && popular.items.length > 0 && (
+                        <motion.div variants={staggerItem}>
+                          <p className="eyebrow mb-3">Popular</p>
+                          <div className="flex flex-wrap gap-2">
+                            {popular.items.map((p) => (
+                              <Link key={p.id} to={`/products/${p.slug}`} onClick={close} className={chip}>
+                                <TrendingUp size={13} /> {p.name}
+                              </Link>
+                            ))}
+                          </div>
+                        </motion.div>
+                      )}
                       <motion.div variants={staggerItem}>
                         <p className="eyebrow mb-3">Browse</p>
                         <div className="flex flex-wrap gap-2">

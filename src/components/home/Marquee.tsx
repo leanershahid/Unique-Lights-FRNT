@@ -1,9 +1,8 @@
 import { motion, useAnimationFrame, useMotionValue, useReducedMotion, useScroll, useSpring, useTransform, useVelocity } from 'motion/react'
 import { useRef } from 'react'
+import { useCategories } from '@/features/categories/hooks'
 
-const ITEMS = ['Pendants', 'Chandeliers', 'Wall lights', 'Floor lamps', 'Table lamps', 'Ceiling lights', 'Outdoor']
-
-function Row({ outline, direction }: { outline?: boolean; direction: 1 | -1 }) {
+function Row({ items, outline, direction }: { items: string[]; outline?: boolean; direction: 1 | -1 }) {
   const reduce = useReducedMotion() ?? false
   const ref = useRef<HTMLDivElement>(null)
   const x = useMotionValue(0)
@@ -34,7 +33,7 @@ function Row({ outline, direction }: { outline?: boolean; direction: 1 | -1 }) {
       aria-hidden="true"
     >
       {[0, 1, 2].map((copy) =>
-        ITEMS.map((t) => (
+        items.map((t) => (
           <span key={`${copy}-${t}`} className="flex items-center">
             <span className="px-[0.28em]">{t}</span>
             <span className="inline-block size-[0.16em] rounded-full bg-brass shadow-[0_0_0.3em_0.08em_var(--ul-glow)]" />
@@ -45,12 +44,15 @@ function Row({ outline, direction }: { outline?: boolean; direction: 1 | -1 }) {
   )
 }
 
-/** Two rows of oversized category names that speed up and lean with scroll velocity. */
+/** Two rows of the store's category names (from the API) that speed up and lean with scroll velocity. */
 export function Marquee() {
+  const { data: categories } = useCategories()
+  const items = (categories ?? []).map((c) => c.name)
+  if (items.length < 2) return null
   return (
-    <section aria-label={ITEMS.join(', ')} className="grid gap-1 overflow-hidden border-y border-line py-[clamp(40px,8vh,90px)]">
-      <Row direction={1} />
-      <Row outline direction={-1} />
+    <section aria-label={items.join(', ')} className="grid gap-1 overflow-hidden border-y border-line py-[clamp(40px,8vh,90px)]">
+      <Row items={items} direction={1} />
+      <Row items={items} outline direction={-1} />
     </section>
   )
 }

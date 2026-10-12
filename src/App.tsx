@@ -16,8 +16,10 @@ const queryClient = new QueryClient({
       staleTime: 30_000,
       gcTime: 10 * 60_000,
       refetchOnWindowFocus: false,
-      // Retry only transient failures (network / 5xx), never 4xx.
-      retry: (count, error) => count < 2 && (!(error instanceof ApiError) || error.status === 0 || error.status >= 500),
+      // Retry only transient failures (network / 5xx), never 4xx. The API's free hosting sleeps when idle and
+      // takes up to a minute to wake, so keep retrying with backoff (1s, 2s, 4s, 8s, 15s, 15s, 15s ≈ 1 min).
+      retry: (count, error) => count < 7 && (!(error instanceof ApiError) || error.status === 0 || error.status >= 500),
+      retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 15_000),
     },
     mutations: { retry: false },
   },

@@ -2,6 +2,7 @@ import type { AdminInventoryQuery, AdminOrderQuery, AdminProductQuery, AdminSear
 
 /** Central React Query keys so invalidation stays consistent. */
 export const queryKeys = {
+  store: ['store'] as const,
   products: {
     all: ['products'] as const,
     list: (q: ProductQuery) => ['products', 'list', q] as const,

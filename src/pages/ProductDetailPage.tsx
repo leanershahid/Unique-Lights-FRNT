@@ -1,4 +1,4 @@
-import { Check, PackageCheck, RotateCcw, SearchX, ShieldCheck, ShoppingBag, Truck, Zap } from 'lucide-react'
+import { Check, RotateCcw, SearchX, ShieldCheck, ShoppingBag, Truck, Zap } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
@@ -20,15 +20,10 @@ import { Tabs } from '@/components/ui/Tabs'
 import { ApiError } from '@/api/axios'
 import { useAddToCart } from '@/features/cart/hooks'
 import { useProduct, useRelatedProducts } from '@/features/products/hooks'
+import { daysFromNow, useStoreSettings } from '@/features/store/hooks'
 import type { ProductDetailDto, ProductVariantDto } from '@/types/api'
 import { cn } from '@/utils/cn'
 import { formatDate, formatPrice } from '@/utils/format'
-
-function addDays(days: number) {
-  const d = new Date()
-  d.setDate(d.getDate() + days)
-  return d.toISOString()
-}
 
 function StockIndicator({ variant }: { variant: ProductVariantDto | undefined }) {
   if (!variant) return null
@@ -84,6 +79,7 @@ export default function ProductDetailPage() {
   const navigate = useNavigate()
   const { data: product, isPending, isError, error, refetch } = useProduct(slug)
   const related = useRelatedProducts(slug)
+  const { data: store } = useStoreSettings()
   const addToCart = useAddToCart()
   const [variantId, setVariantId] = useState<string | null>(null)
   const [quantity, setQuantity] = useState(1)
@@ -223,7 +219,12 @@ export default function ProductDetailPage() {
               )}
               <motion.div variants={staggerItem}>
                 <Price price={variant?.price ?? product.price} compareAtPrice={variant?.compareAtPrice ?? product.compareAtPrice} size="lg" showSaving />
-                <p className="mt-1.5 text-[0.8rem] text-subtle">Plus GST, added at checkout. Free delivery over {formatPrice(2000)}.</p>
+                {store && (
+                  <p className="mt-1.5 text-[0.8rem] text-subtle">
+                    {store.taxRate > 0 ? `Plus ${Math.round(store.taxRate * 100)}% GST, added at checkout.` : 'Taxes included.'}
+                    {store.freeShippingThreshold > 0 && ` Free delivery over ${formatPrice(store.freeShippingThreshold)}.`}
+                  </p>
+                )}
               </motion.div>
               {product.shortDescription && (
                 <motion.p variants={staggerItem} className="text-muted">
@@ -257,23 +258,32 @@ export default function ProductDetailPage() {
                 </div>
               </motion.div>
 
-              <motion.ul variants={staggerItem} className="grid gap-3 rounded-[var(--radius-card)] border border-line p-4 text-[0.88rem]">
-                <li className="flex gap-3">
-                  <Truck size={18} className="shrink-0 text-brass" />
-                  <span>
-                    <b className="font-semibold text-ink">Standard delivery by {formatDate(addDays(5), { weekday: 'short', day: 'numeric', month: 'short' })}</b>
-                    <span className="block text-muted">Express by {formatDate(addDays(2), { weekday: 'short', day: 'numeric', month: 'short' })} for ₹349</span>
-                  </span>
-                </li>
-                <li className="flex gap-3">
-                  <ShieldCheck size={18} className="shrink-0 text-brass" />
-                  <span className="text-muted">{product.specifications['Warranty'] ?? 'Manufacturer warranty'} · Genuine product</span>
-                </li>
-                <li className="flex gap-3">
-                  <RotateCcw size={18} className="shrink-0 text-brass" />
-                  <span className="text-muted">30-day returns on unused items, free pickup</span>
-                </li>
-              </motion.ul>
+              {/* Delivery promise, fees and returns come from the store settings API; warranty from the product's specs. */}
+              {store && (
+                <motion.ul variants={staggerItem} className="grid gap-3 rounded-[var(--radius-card)] border border-line p-4 text-[0.88rem]">
+                  <li className="flex gap-3">
+                    <Truck size={18} className="shrink-0 text-brass" />
+                    <span>
+                      <b className="font-semibold text-ink">Standard delivery by {formatDate(daysFromNow(store.standardDeliveryDays), { weekday: 'short', day: 'numeric', month: 'short' })}</b>
+                      <span className="block text-muted">
+                        Express by {formatDate(daysFromNow(store.expressDeliveryDays), { weekday: 'short', day: 'numeric', month: 'short' })} for {formatPrice(store.expressShipping)}
+                      </span>
+                    </span>
+                  </li>
+                  {product.specifications['Warranty'] && (
+                    <li className="flex gap-3">
+                      <ShieldCheck size={18} className="shrink-0 text-brass" />
+                      <span className="text-muted">{product.specifications['Warranty']} warranty</span>
+                    </li>
+                  )}
+                  {store.returnDays > 0 && (
+                    <li className="flex gap-3">
+                      <RotateCcw size={18} className="shrink-0 text-brass" />
+                      <span className="text-muted">{store.returnDays}-day returns on unused items</span>
+                    </li>
+                  )}
+                </motion.ul>
+              )}
 
               {variant && (
                 <motion.p variants={staggerItem} className="font-mono text-[0.75rem] text-subtle">
@@ -291,7 +301,7 @@ export default function ProductDetailPage() {
             items={[
               { value: 'details', label: 'Details' },
               { value: 'specs', label: 'Specifications', count: specs.length },
-              { value: 'delivery', label: 'Delivery & returns' },
+              ...(store ? [{ value: 'delivery' as const, label: 'Delivery & returns' }] : []),
             ]}
           />
           <AnimatePresence mode="wait">
@@ -307,23 +317,25 @@ export default function ProductDetailPage() {
                   ))}
                 </dl>
               )}
-              {tab === 'delivery' && (
-                <div className="grid grid-cols-1 gap-4 text-muted sm:grid-cols-3">
-                  <div>
-                    <PackageCheck className="mb-2 text-brass" />
-                    <p className="font-semibold text-ink">Packed with care</p>
-                    <p className="text-[0.9rem]">Glass and crystal ship in double-walled boxes with foam inserts.</p>
-                  </div>
+              {tab === 'delivery' && store && (
+                <div className="grid grid-cols-1 gap-4 text-muted sm:grid-cols-2">
                   <div>
                     <Truck className="mb-2 text-brass" />
-                    <p className="font-semibold text-ink">2–5 day delivery</p>
-                    <p className="text-[0.9rem]">Standard is free over {formatPrice(2000)}, otherwise ₹149. Express is ₹349.</p>
+                    <p className="font-semibold text-ink">
+                      {store.expressDeliveryDays}–{store.standardDeliveryDays} day delivery
+                    </p>
+                    <p className="text-[0.9rem]">
+                      Standard {store.freeShippingThreshold > 0 ? `is free over ${formatPrice(store.freeShippingThreshold)}, otherwise ` : 'costs '}
+                      {formatPrice(store.standardShipping)}. Express is {formatPrice(store.expressShipping)}.
+                    </p>
                   </div>
-                  <div>
-                    <RotateCcw className="mb-2 text-brass" />
-                    <p className="font-semibold text-ink">30-day returns</p>
-                    <p className="text-[0.9rem]">Unused items in original packaging. We arrange the pickup.</p>
-                  </div>
+                  {store.returnDays > 0 && (
+                    <div>
+                      <RotateCcw className="mb-2 text-brass" />
+                      <p className="font-semibold text-ink">{store.returnDays}-day returns</p>
+                      <p className="text-[0.9rem]">Unused items in their original packaging.</p>
+                    </div>
+                  )}
                 </div>
               )}
             </motion.div>

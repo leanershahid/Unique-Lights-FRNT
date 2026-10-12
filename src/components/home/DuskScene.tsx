@@ -5,7 +5,7 @@ import { useIsShortScreen } from '@/hooks/useMediaQuery'
 const STEPS = [
   { eyebrow: '7:42 pm', title: 'The sun goes down.', text: 'Daylight fades and the room goes flat and grey. This is when lighting does its real work.' },
   { eyebrow: 'Switch on', title: 'One warm light changes everything.', text: 'A single wall sconce at 2700 K pulls the walls in and makes the space feel lived in.' },
-  { eyebrow: 'Settle in', title: 'Dim it to the evening you want.', text: 'All our fixtures dim smoothly down to 10%, without flicker or hum.' },
+  { eyebrow: 'Settle in', title: 'Dim it to the evening you want.', text: 'A dimmer lets one fixture carry both a bright dinner and a quiet late evening.' },
 ]
 
 /** Pinned scene: scrolling switches the light on (with a flicker), then dims it. */

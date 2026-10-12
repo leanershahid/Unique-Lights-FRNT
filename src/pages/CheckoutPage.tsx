@@ -14,6 +14,7 @@ import { EmptyState } from '@/components/ui/States'
 import { useAddresses } from '@/features/account/hooks'
 import { useCart } from '@/features/cart/hooks'
 import { useCheckoutQuote, useCreateOrder, useValidateCoupon } from '@/features/orders/hooks'
+import { useStoreSettings } from '@/features/store/hooks'
 import { useToast } from '@/hooks/useToast'
 import type { DeliveryMethod, PaymentMethod } from '@/types/api'
 import { cn } from '@/utils/cn'
@@ -86,6 +87,7 @@ export default function CheckoutPage() {
   const expressQuote = useCheckoutQuote('Express', coupon, cart.items.length > 0)
   const validateCoupon = useValidateCoupon()
   const createOrder = useCreateOrder()
+  const { data: store } = useStoreSettings()
 
   useEffect(() => {
     document.title = 'Checkout · Unique Lights'
@@ -392,7 +394,7 @@ export default function CheckoutPage() {
                 ['Subtotal', q?.subtotal ?? cart.subtotal],
                 ['Discount', q ? -q.discount : 0],
                 ['Delivery', q?.shipping],
-                ['GST (18%)', q?.tax],
+                [store && store.taxRate > 0 ? `GST (${Math.round(store.taxRate * 100)}%)` : 'Tax', q?.tax],
               ] as const
             ).map(([label, value]) =>
               label === 'Discount' && !value ? null : (

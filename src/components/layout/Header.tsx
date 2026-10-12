@@ -7,6 +7,7 @@ import { dropdown } from '@/animations/variants'
 import { IconButton } from '@/components/ui/Button'
 import { useLogout } from '@/features/auth/hooks'
 import { useCart } from '@/features/cart/hooks'
+import { useCategories } from '@/features/categories/hooks'
 import { useWishlist } from '@/features/wishlist/hooks'
 import { selectIsAdmin, selectIsAuthenticated, useAppDispatch, useAppSelector } from '@/store/hooks'
 import { themeToggled } from '@/store/slices/preferencesSlice'
@@ -105,12 +106,16 @@ function AccountMenu() {
   )
 }
 
-const navLinks = [
-  { to: '/products?isNew=true', label: 'New in' },
-  { to: '/categories/pendant-lights', label: 'Pendants' },
-  { to: '/categories/chandeliers', label: 'Chandeliers' },
-  { to: '/products?sort=price_desc&featured=true', label: 'Collections' },
-]
+/** Header links: two catalogue views plus the store's top categories, all from the API. */
+function useNavLinks() {
+  const { data: categories } = useCategories()
+  const top = (categories ?? []).filter((c) => c.productCount > 0).slice(0, 2)
+  return [
+    { to: '/products?isNew=true', label: 'New in' },
+    ...top.map((c) => ({ to: `/categories/${c.slug}`, label: c.name })),
+    { to: '/products?featured=true', label: 'Bestsellers' },
+  ]
+}
 
 /**
  * Transparent over the home hero, frosted glass once the page scrolls.
@@ -123,6 +128,7 @@ export function Header({ overlay = false }: { overlay?: boolean }) {
   const { cart } = useCart()
   const { data: wishlist } = useWishlist()
   const location = useLocation()
+  const navLinks = useNavLinks()
   const { scrollY } = useScroll()
   const [scrolled, setScrolled] = useState(false)
   const [hidden, setHidden] = useState(false)

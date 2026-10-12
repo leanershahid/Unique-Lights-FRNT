@@ -580,3 +580,21 @@ export interface AdminInventoryQuery extends PageQuery {
   search?: string
   lowStockOnly?: boolean
 }
+
+// ---------- Store settings ----------
+export interface StoreSettingsDto {
+  name: string
+  tagline: string | null
+  currency: string
+  taxRate: number
+  freeShippingThreshold: number
+  standardShipping: number
+  expressShipping: number
+  standardDeliveryDays: number
+  expressDeliveryDays: number
+  returnDays: number
+  supportEmail: string | null
+  supportPhone: string | null
+  address: string | null
+  businessHours: string | null
+}

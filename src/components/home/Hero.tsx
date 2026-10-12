@@ -2,6 +2,7 @@ import { motion, useReducedMotion, useScroll, useTransform } from 'motion/react'
 import { useEffect, useRef } from 'react'
 import { revealLine, staggerContainer } from '@/animations/variants'
 import { LinkButton } from '@/components/ui/Button'
+import { useStoreSettings } from '@/features/store/hooks'
 
 const LINES = [['Illuminate', 'your', 'space'], ['with', 'something'], ['extraordinary.']]
 
@@ -67,6 +68,7 @@ function useDust(canvasRef: React.RefObject<HTMLCanvasElement | null>, light: Re
 }
 
 export function Hero() {
+  const { data: store } = useStoreSettings()
   const ref = useRef<HTMLElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const light = useRef({ x: 0, y: 0 })
@@ -172,7 +174,8 @@ export function Hero() {
           ))}
         </motion.h1>
         <motion.p initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 1.05, duration: 0.6 }} className="mt-5 max-w-[46ch] text-[clamp(0.95rem,1.4vw,1.15rem)] text-[#e7ddd0] sm:mt-6">
-          Pendants, chandeliers, wall lights and lamps chosen for how they make a room feel after dark. Every fixture is dimmable and ships within three days.
+          {store?.tagline ?? 'Lighting chosen for how it makes a room feel after dark.'}
+          {store && ` Delivered in ${store.expressDeliveryDays}–${store.standardDeliveryDays} days.`}
         </motion.p>
         <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 1.3, duration: 0.6 }} className="pointer-events-auto mt-8 flex flex-col gap-3 min-[400px]:flex-row min-[400px]:flex-wrap">
           <LinkButton to="/products?featured=true" variant="accent" size="lg">

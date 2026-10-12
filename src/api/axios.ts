@@ -43,7 +43,8 @@ function serializeParams(params: Record<string, QueryValue>): string {
 export const http = axios.create({
   baseURL: API_BASE_URL,
   withCredentials: true,
-  timeout: 20000,
+  // Allows for the API waking from sleep on its free hosting plan.
+  timeout: 60000,
   headers: { Accept: 'application/json' },
   paramsSerializer: { serialize: (p) => serializeParams(p as Record<string, QueryValue>) },
 })

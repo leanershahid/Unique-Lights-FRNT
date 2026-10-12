@@ -1,11 +1,16 @@
 import { motion, useAnimationFrame, useMotionValue, useReducedMotion, useScroll, useTransform, useVelocity } from 'motion/react'
 import { useRef } from 'react'
 import { LinkButton } from '@/components/ui/Button'
+import { useCategories } from '@/features/categories/hooks'
+import { useProducts } from '@/features/products/hooks'
+import { formatPrice } from '@/utils/format'
 
-/** Call to action under a brass pendant that swings with scroll speed and pointer movement. */
+/** Closing call to action under a swinging brass pendant. Figures come from the live catalogue. */
 export function PendantCta() {
   const ref = useRef<HTMLElement>(null)
   const reduce = useReducedMotion() ?? false
+  const { data: categories } = useCategories()
+  const { data: all } = useProducts({ pageSize: 1, sort: 'price_asc' })
   const { scrollY } = useScroll()
   const velocity = useVelocity(scrollY)
   const { scrollYProgress } = useScroll({ target: ref, offset: ['start end', 'end start'] })
@@ -25,13 +30,21 @@ export function PendantCta() {
     angle.set(s.a)
   })
 
+  const total = all?.totalCount ?? 0
+  const from = all?.items[0]?.price
+  const categoryCount = categories?.filter((c) => c.productCount > 0).length ?? 0
+  const backdrop = categories?.find((c) => c.imageUrl)?.imageUrl
+
+  if (!all || total === 0) return null
+
   return (
     <section
       ref={ref}
       onPointerMove={(e) => (state.current.push += Math.max(-40, Math.min(40, e.movementX)) * 0.00012)}
       className="relative overflow-hidden px-[clamp(16px,4vw,48px)] pb-[clamp(90px,14vh,160px)] pt-[clamp(300px,42vh,380px)] text-center text-[#f4ece1]"
     >
-      <motion.img src="/images/room-living.jpg" alt="" loading="lazy" style={reduce ? undefined : { y: bgY }} className="absolute inset-x-0 -top-[10%] h-[120%] w-full object-cover brightness-[0.3]" />
+      <div className="absolute inset-0 bg-[#120f13]" />
+      {backdrop && <motion.img src={backdrop} alt="" loading="lazy" style={reduce ? undefined : { y: bgY }} className="absolute inset-x-0 -top-[10%] h-[120%] w-full object-cover brightness-[0.3]" />}
       <motion.svg
         viewBox="0 0 1000 1000"
         aria-hidden="true"
@@ -58,11 +71,13 @@ export function PendantCta() {
         <ellipse cx="500" cy="236" rx="56" ry="5" fill="#fff1d6" />
       </motion.svg>
       <motion.div initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.5 }} transition={{ duration: 0.6 }} className="relative mx-auto grid max-w-3xl justify-items-center gap-5">
-        <p className="eyebrow !text-[#e9b877]">Free lighting plan</p>
-        <h2 className="max-w-[14ch] text-[clamp(2.4rem,6.4vw,5.2rem)]">Send us a photo of your room.</h2>
-        <p className="max-w-[46ch] text-[#e3d8ca]">Our lighting designers suggest fixtures, bulb warmth and placement within 48 hours, at no cost.</p>
-        <LinkButton to="/register" variant="accent" size="lg">
-          Create an account to start
+        <p className="eyebrow !text-[#e9b877]">The full collection</p>
+        <h2 className="max-w-[16ch] text-[clamp(2.4rem,6.4vw,5.2rem)]">
+          {total} lights across {categoryCount} {categoryCount === 1 ? 'category' : 'categories'}.
+        </h2>
+        {from !== undefined && <p className="max-w-[46ch] text-[#e3d8ca]">Starting from {formatPrice(from)}.</p>}
+        <LinkButton to="/products" variant="accent" size="lg">
+          Browse everything
         </LinkButton>
       </motion.div>
     </section>
