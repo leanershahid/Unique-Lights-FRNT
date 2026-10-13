@@ -1,10 +1,11 @@
-import { AlertTriangle, IndianRupee, Package, ShoppingCart, TrendingUp, Users } from 'lucide-react'
+import { AlertTriangle, IndianRupee, Package, Plus, ShoppingCart, TrendingUp, Users } from 'lucide-react'
 import { motion } from 'motion/react'
 import { useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { KpiCard, useChartColors } from '@/components/admin/AdminKit'
 import { OrderStatusBadge } from '@/components/ui/Badge'
+import { LinkButton } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Misc'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { ErrorState } from '@/components/ui/States'
@@ -64,7 +65,23 @@ export default function DashboardPage() {
 
   return (
     <div className="grid gap-6">
-      <AdminPageHeader title="Dashboard" description="Sales, orders and stock at a glance." />
+      <AdminPageHeader
+        title="Dashboard"
+        description="Sales, orders and stock at a glance."
+        action={
+          <div className="flex flex-wrap gap-2">
+            <LinkButton to="/admin/products/new" variant="accent">
+              <Plus size={17} /> Add product
+            </LinkButton>
+            <LinkButton to="/admin/orders" variant="outline">
+              <ShoppingCart size={17} /> Orders
+            </LinkButton>
+            <LinkButton to="/admin/inventory" variant="outline">
+              <Package size={17} /> Stock
+            </LinkButton>
+          </div>
+        }
+      />
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <KpiCard index={0} label="Revenue (30 days)" value={data.revenueLast30Days} format={formatPrice} icon={<IndianRupee size={17} />} delta={delta} />

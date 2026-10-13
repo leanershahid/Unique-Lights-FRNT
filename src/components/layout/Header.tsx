@@ -123,6 +123,7 @@ function useNavLinks() {
 export function Header({ overlay = false }: { overlay?: boolean }) {
   const dispatch = useAppDispatch()
   const isAuthenticated = useAppSelector(selectIsAuthenticated)
+  const isAdmin = useAppSelector(selectIsAdmin)
   const theme = useAppSelector((s) => s.preferences.theme)
   const { cartPulse, wishlistPulse } = useAppSelector((s) => s.ui)
   const { cart } = useCart()
@@ -214,6 +215,18 @@ export function Header({ overlay = false }: { overlay?: boolean }) {
                 <Heart size={20} />
               </motion.span>
               <CountBadge count={wishlist?.items.length ?? 0} pulse={wishlistPulse} />
+            </Link>
+          )}
+          {/* Visible only to admins. Hidden below 380px, where the ☰ menu has the same link. */}
+          {isAdmin && (
+            <Link
+              to="/admin"
+              aria-label="Admin dashboard"
+              title="Admin dashboard"
+              className="mr-1 inline-flex h-10 items-center gap-2 rounded-full bg-brass px-3 text-[0.85rem] font-semibold text-on-brass transition-colors hover:bg-brass-strong max-[379px]:hidden sm:px-4"
+            >
+              <LayoutDashboard size={16} />
+              <span className="hidden sm:inline">Admin</span>
             </Link>
           )}
           <IconButton
