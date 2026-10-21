@@ -4,7 +4,6 @@ import { useEffect } from 'react'
 import { Provider } from 'react-redux'
 import { RouterProvider } from 'react-router-dom'
 import { ApiError, refreshSession } from '@/api/axios'
-import { Toaster } from '@/components/ui/Toaster'
 import { router } from '@/routes/router'
 import { store } from '@/store'
 import { useAppDispatch, useAppSelector } from '@/store/hooks'
@@ -50,7 +49,6 @@ export default function App() {
         <MotionConfig reducedMotion="user">
           <AppEffects />
           <RouterProvider router={router} />
-          <Toaster />
         </MotionConfig>
       </QueryClientProvider>
     </Provider>

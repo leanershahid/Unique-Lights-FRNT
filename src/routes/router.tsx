@@ -1,5 +1,6 @@
 import { lazy } from 'react'
-import { createBrowserRouter } from 'react-router-dom'
+import { createBrowserRouter, Outlet } from 'react-router-dom'
+import { Toaster } from '@/components/ui/Toaster'
 import { AccountLayout } from '@/layouts/AccountLayout'
 import { AdminLayout } from '@/layouts/AdminLayout'
 import { AuthLayout } from '@/layouts/AuthLayout'
@@ -35,7 +36,23 @@ const AdminCustomersPage = lazy(() => import('@/pages/admin/CustomersPage'))
 const AdminCustomerDetailPage = lazy(() => import('@/pages/admin/CustomerDetailPage'))
 const AdminCouponsPage = lazy(() => import('@/pages/admin/CouponsPage'))
 
+/**
+ * Wraps every route so app-wide UI that uses router links (toast "View cart" / "View wishlist" actions)
+ * renders inside the router. Rendering it outside crashes with "Cannot destructure property 'basename'".
+ */
+function RootShell() {
+  return (
+    <>
+      <Outlet />
+      <Toaster />
+    </>
+  )
+}
+
 export const router = createBrowserRouter([
+  {
+    element: <RootShell />,
+    children: [
   {
     element: <StoreLayout />,
     errorElement: <RouteError />,
@@ -111,6 +128,8 @@ export const router = createBrowserRouter([
       { path: 'customers', element: <AdminCustomersPage /> },
       { path: 'customers/:id', element: <AdminCustomerDetailPage /> },
       { path: 'coupons', element: <AdminCouponsPage /> },
+    ],
+  },
     ],
   },
 ])
