@@ -1,7 +1,9 @@
-import { ChevronLeft, ImagePlus, Link2, Pencil, Plus, Star, Trash2, Upload } from 'lucide-react'
+import { ChevronLeft, ImagePlus, Pencil, Plus, Star, Trash2, Upload } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
 import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
+import { useQueryClient } from '@tanstack/react-query'
+import { adminApi } from '@/api/adminApi'
 import { getErrorMessage } from '@/api/axios'
 import { Table, td, th } from '@/components/admin/AdminKit'
 import { Badge } from '@/components/ui/Badge'
@@ -13,7 +15,6 @@ import { ConfirmDialog, Modal } from '@/components/ui/Overlay'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { ErrorState } from '@/components/ui/States'
 import {
-  useAddProductImageUrl,
   useAdminCategories,
   useAdminProduct,
   useDeleteProductImage,
@@ -23,6 +24,7 @@ import {
   useUpdateProductImage,
   useUploadProductImage,
 } from '@/features/admin/hooks'
+import { useToast } from '@/hooks/useToast'
 import { AdminPageHeader } from '@/layouts/AdminLayout'
 import type { AdminProductDetailDto, AdminVariantDto, UpsertProductRequest, UpsertVariantRequest } from '@/types/api'
 import { cn } from '@/utils/cn'
@@ -57,10 +59,102 @@ function toForm(p: AdminProductDetailDto): ProductForm {
   }
 }
 
+const ACCEPTED = ['image/jpeg', 'image/png', 'image/webp']
+const MAX_BYTES = 5 * 1024 * 1024
+
+/** Photos chosen before the product exists. They upload right after "Create product" succeeds. */
+function NewImagesPicker({ files, onChange, progress }: { files: File[]; onChange: (f: File[]) => void; progress: string | null }) {
+  const inputRef = useRef<HTMLInputElement>(null)
+  const [dragOver, setDragOver] = useState(false)
+  const [problem, setProblem] = useState<string | null>(null)
+  const [previews, setPreviews] = useState<string[]>([])
+
+  useEffect(() => {
+    const urls = files.map((f) => URL.createObjectURL(f))
+    setPreviews(urls)
+    return () => urls.forEach((u) => URL.revokeObjectURL(u))
+  }, [files])
+
+  const add = (list: FileList | null) => {
+    if (!list?.length) return
+    const picked = Array.from(list)
+    const ok = picked.filter((f) => ACCEPTED.includes(f.type) && f.size <= MAX_BYTES)
+    setProblem(ok.length < picked.length ? 'Some files were skipped: use JPG, PNG or WebP images up to 5 MB.' : null)
+    onChange([...files, ...ok])
+  }
+
+  return (
+    <Card className="p-6">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 className="text-[1.3rem]">Images</h2>
+          <p className="text-[0.82rem] text-subtle">JPG, PNG or WebP up to 5 MB. The first image is the main one. They upload when you create the product.</p>
+        </div>
+        <Button variant="outline" size="sm" onClick={() => inputRef.current?.click()}>
+          <Upload size={15} /> Choose images
+        </Button>
+      </div>
+      <input
+        ref={inputRef}
+        type="file"
+        accept={ACCEPTED.join(',')}
+        multiple
+        className="hidden"
+        onChange={(e) => {
+          add(e.target.files)
+          e.target.value = ''
+        }}
+      />
+      <div
+        onDragOver={(e) => {
+          e.preventDefault()
+          setDragOver(true)
+        }}
+        onDragLeave={() => setDragOver(false)}
+        onDrop={(e) => {
+          e.preventDefault()
+          setDragOver(false)
+          add(e.dataTransfer.files)
+        }}
+        className={cn('rounded-xl border-2 border-dashed p-3 transition-colors', dragOver ? 'border-brass bg-brass/5' : 'border-line')}
+      >
+        {files.length === 0 ? (
+          <button type="button" onClick={() => inputRef.current?.click()} className="flex w-full flex-col items-center gap-2 rounded-xl py-10 text-muted hover:text-brass">
+            <ImagePlus size={28} /> Drop product photos here or click to choose
+          </button>
+        ) : (
+          <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+            {files.map((f, i) => (
+              <li key={`${f.name}-${i}`} className="relative overflow-hidden rounded-lg border border-line bg-surface-2">
+                {previews[i] && <img src={previews[i]} alt="" className="aspect-square w-full object-cover" />}
+                {i === 0 && <span className="absolute left-2 top-2 rounded-full bg-brass px-2 py-0.5 text-[0.68rem] font-semibold text-on-brass">Main</span>}
+                <div className="absolute inset-x-0 bottom-0 flex justify-between bg-gradient-to-t from-black/80 to-transparent p-2">
+                  <button type="button" disabled={i === 0} onClick={() => onChange([f, ...files.filter((_, j) => j !== i)])} className="rounded p-1.5 text-white hover:bg-white/15 disabled:opacity-0" aria-label="Make main image">
+                    <Star size={15} />
+                  </button>
+                  <button type="button" onClick={() => onChange(files.filter((_, j) => j !== i))} className="rounded p-1.5 text-white hover:bg-white/15" aria-label={`Remove ${f.name}`}>
+                    <Trash2 size={15} />
+                  </button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+      {problem && <p className="mt-2 text-[0.82rem] text-warning">{problem}</p>}
+      {progress && <p className="mt-2 text-[0.85rem] text-brass">{progress}</p>}
+    </Card>
+  )
+}
+
 function ProductDetailsForm({ product }: { product?: AdminProductDetailDto }) {
   const navigate = useNavigate()
   const categories = useAdminCategories()
   const save = useSaveProduct()
+  const qc = useQueryClient()
+  const toast = useToast()
+  const [pendingImages, setPendingImages] = useState<File[]>([])
+  const [uploadProgress, setUploadProgress] = useState<string | null>(null)
   const [values, setValues] = useState<ProductForm>(product ? toForm(product) : blank)
   const [errors, setErrors] = useState<Errors<ProductForm>>({})
   const set = <K extends keyof ProductForm>(k: K, v: ProductForm[K]) => {
@@ -100,7 +194,25 @@ function ProductDetailsForm({ product }: { product?: AdminProductDetailDto }) {
     save.mutate(
       { id: product?.id, body },
       {
-        onSuccess: (p) => !product && navigate(`/admin/products/${p.id}`, { replace: true }),
+        onSuccess: async (p) => {
+          if (product) return
+          // Upload the photos chosen on the New product page, then open the product for variants and stock.
+          let failed = 0
+          for (const [i, file] of pendingImages.entries()) {
+            setUploadProgress(`Uploading image ${i + 1} of ${pendingImages.length}…`)
+            try {
+              await adminApi.products.uploadImage(p.id, file, p.name, i === 0)
+            } catch (err) {
+              failed += 1
+              toast.fromError(err, `Could not upload ${file.name}`)
+            }
+          }
+          setUploadProgress(null)
+          if (pendingImages.length && failed === 0) toast.success({ title: `${pendingImages.length} image${pendingImages.length === 1 ? '' : 's'} uploaded` })
+          await qc.invalidateQueries({ queryKey: ['admin', 'product', p.id] })
+          void qc.invalidateQueries({ queryKey: ['admin', 'products'] })
+          navigate(`/admin/products/${p.id}`, { replace: true })
+        },
         onError: (err) => setErrors(serverErrors<ProductForm>(err)),
       },
     )
@@ -128,6 +240,8 @@ function ProductDetailsForm({ product }: { product?: AdminProductDetailDto }) {
             <Textarea label="Full description" optional value={values.description ?? ''} onChange={(e) => set('description', e.target.value)} className="min-h-40" />
           </div>
         </Card>
+
+        {!product && <NewImagesPicker files={pendingImages} onChange={setPendingImages} progress={uploadProgress} />}
 
         <Card className="p-6">
           <div className="mb-4 flex items-center justify-between">
@@ -170,8 +284,8 @@ function ProductDetailsForm({ product }: { product?: AdminProductDetailDto }) {
           <Switch checked={values.isNew} onChange={(v) => set('isNew', v)} label="Mark as new" />
         </Card>
         {save.isError && !hasErrors(serverErrors(save.error)) && <p className="text-[0.85rem] text-danger">{getErrorMessage(save.error)}</p>}
-        <Button type="submit" variant="accent" size="lg" fullWidth loading={save.isPending}>
-          {product ? 'Save changes' : 'Create product'}
+        <Button type="submit" variant="accent" size="lg" fullWidth loading={save.isPending || uploadProgress !== null}>
+          {product ? 'Save changes' : pendingImages.length ? `Create product and upload ${pendingImages.length} image${pendingImages.length === 1 ? '' : 's'}` : 'Create product'}
         </Button>
       </div>
     </form>
@@ -331,14 +445,10 @@ function VariantsCard({ product }: { product: AdminProductDetailDto }) {
 
 function ImagesCard({ product }: { product: AdminProductDetailDto }) {
   const upload = useUploadProductImage(product.id)
-  const addUrl = useAddProductImageUrl(product.id)
   const update = useUpdateProductImage(product.id)
   const remove = useDeleteProductImage(product.id)
   const fileRef = useRef<HTMLInputElement>(null)
   const [progress, setProgress] = useState<number | null>(null)
-  const [urlOpen, setUrlOpen] = useState(false)
-  const [url, setUrl] = useState('')
-  const [alt, setAlt] = useState('')
   const [dragOver, setDragOver] = useState(false)
 
   const uploadFiles = async (files: FileList | null) => {
@@ -359,12 +469,9 @@ function ImagesCard({ product }: { product: AdminProductDetailDto }) {
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="text-[1.3rem]">Images</h2>
-          <p className="text-[0.82rem] text-subtle">Uploaded to Supabase Storage. JPG, PNG or WebP up to 5 MB. The starred image is shown first.</p>
+          <p className="text-[0.82rem] text-subtle">JPG, PNG or WebP up to 5 MB. Drag photos in or click Upload. The starred image is shown first.</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="ghost" size="sm" onClick={() => setUrlOpen(true)}>
-            <Link2 size={15} /> Add by URL
-          </Button>
           <Button variant="outline" size="sm" onClick={() => fileRef.current?.click()} loading={upload.isPending}>
             <Upload size={15} /> Upload
           </Button>
@@ -428,38 +535,6 @@ function ImagesCard({ product }: { product: AdminProductDetailDto }) {
         )}
       </div>
 
-      <Modal
-        open={urlOpen}
-        onClose={() => setUrlOpen(false)}
-        title="Add image by URL"
-        size="sm"
-        footer={
-          <Button
-            variant="accent"
-            loading={addUrl.isPending}
-            disabled={!/^(https?:\/\/|\/)/.test(url.trim())}
-            onClick={() =>
-              addUrl.mutate(
-                { url: url.trim(), altText: alt.trim() || product.name, isPrimary: product.images.length === 0 },
-                {
-                  onSuccess: () => {
-                    setUrl('')
-                    setAlt('')
-                    setUrlOpen(false)
-                  },
-                },
-              )
-            }
-          >
-            Add image
-          </Button>
-        }
-      >
-        <div className="grid gap-4">
-          <Input label="Image URL" value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://… or /images/…" data-autofocus />
-          <Input label="Alt text" optional value={alt} onChange={(e) => setAlt(e.target.value)} hint="Describe the photo for screen readers." />
-        </div>
-      </Modal>
     </Card>
   )
 }
@@ -479,7 +554,7 @@ export default function ProductEditPage() {
       </Link>
       <AdminPageHeader
         title={isNew ? 'New product' : (product?.name ?? 'Product')}
-        description={isNew ? 'Create the product first; variants and images can be added right after.' : undefined}
+        description={isNew ? 'Add details and photos. Variants and stock can be set right after creating it.' : undefined}
         action={
           product && (
             <Link to={`/products/${product.slug}`} target="_blank" rel="noreferrer" className="text-[0.88rem] font-semibold text-brass hover:underline">

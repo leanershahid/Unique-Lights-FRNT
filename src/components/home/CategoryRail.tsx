@@ -34,7 +34,7 @@ function CategoryCard({ category, index, tilt }: { category: CategoryDto; index:
           style={{ background: `radial-gradient(circle at ${style.gx ?? '50%'} ${style.gy ?? '0%'}, rgba(255,226,180,0.32), transparent 55%)` }}
         />
         <span className="glass absolute left-3.5 top-3 rounded-full px-2.5 py-0.5 font-mono text-[0.72rem] text-ink">
-          {String(index + 1).padStart(2, '0')} · {category.productCount} styles
+          {String(index + 1).padStart(2, '0')} · {category.productCount === 0 ? 'Coming soon' : `${category.productCount} ${category.productCount === 1 ? 'style' : 'styles'}`}
         </span>
       </figure>
       <div className="flex items-baseline justify-between gap-3">

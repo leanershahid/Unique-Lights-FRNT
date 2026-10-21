@@ -73,7 +73,7 @@ export function PendantCta() {
       <motion.div initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.5 }} transition={{ duration: 0.6 }} className="relative mx-auto grid max-w-3xl justify-items-center gap-5">
         <p className="eyebrow !text-[#e9b877]">The full collection</p>
         <h2 className="max-w-[16ch] text-[clamp(2.4rem,6.4vw,5.2rem)]">
-          {total} lights across {categoryCount} {categoryCount === 1 ? 'category' : 'categories'}.
+          {total} {total === 1 ? 'light' : 'lights'} across {categoryCount} {categoryCount === 1 ? 'category' : 'categories'}.
         </h2>
         {from !== undefined && <p className="max-w-[46ch] text-[#e3d8ca]">Starting from {formatPrice(from)}.</p>}
         <LinkButton to="/products" variant="accent" size="lg">

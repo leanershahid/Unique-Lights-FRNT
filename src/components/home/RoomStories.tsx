@@ -46,7 +46,11 @@ function CategoryStory({ category, flip }: { category: CategoryDto; flip: boolea
                 <li key={p.id} className="border-b border-line">
                   <Link to={`/products/${p.slug}`} className="flex justify-between gap-4 py-2.5 transition-colors hover:text-brass">
                     <span className="min-w-0 truncate">{p.name}</span>
-                    <b className="shrink-0 font-mono font-medium tabular">{formatPrice(p.price)}</b>
+                    <span className="flex shrink-0 items-baseline gap-2 font-mono tabular">
+                      {p.discountPercent ? <span className="text-[0.75rem] text-success">−{p.discountPercent}%</span> : null}
+                      {p.compareAtPrice && p.compareAtPrice > p.price ? <s className="text-[0.8rem] text-subtle">{formatPrice(p.compareAtPrice)}</s> : null}
+                      <b className="font-medium">{formatPrice(p.price)}</b>
+                    </span>
                   </Link>
                 </li>
               ))}

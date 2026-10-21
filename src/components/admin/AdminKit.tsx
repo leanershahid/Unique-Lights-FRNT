@@ -1,22 +1,35 @@
 import { Search } from 'lucide-react'
-import { animate, motion, useInView, useReducedMotion } from 'motion/react'
+import { animate, motion, useReducedMotion } from 'motion/react'
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { useDebounce } from '@/hooks/useDebounce'
 import { useAppSelector } from '@/store/hooks'
 import { cn } from '@/utils/cn'
 
-/** Counts up to a value once visible. */
+/**
+ * Shows the real value, with a count-up from zero when the page is actually on screen.
+ * Animation frames pause in background tabs and hidden windows, so the exact value is always
+ * set when the animation ends or after a fallback timeout; it can never get stuck at 0.
+ */
 export function CountUp({ value, format }: { value: number; format: (n: number) => string }) {
   const ref = useRef<HTMLSpanElement>(null)
-  const inView = useInView(ref, { once: true })
   const reduce = useReducedMotion()
-  const [shown, setShown] = useState(reduce ? value : 0)
+  const [shown, setShown] = useState(value)
   useEffect(() => {
-    if (!inView) return
-    if (reduce) return setShown(value)
-    const controls = animate(0, value, { duration: 1.1, ease: [0.22, 1, 0.36, 1], onUpdate: setShown })
-    return () => controls.stop()
-  }, [inView, value, reduce])
+    if (reduce || document.visibilityState !== 'visible') {
+      setShown(value)
+      return
+    }
+    setShown(0)
+    const controls = animate(0, value, { duration: 1.1, ease: [0.22, 1, 0.36, 1], onUpdate: setShown, onComplete: () => setShown(value) })
+    const fallback = window.setTimeout(() => {
+      controls.stop()
+      setShown(value)
+    }, 1600)
+    return () => {
+      controls.stop()
+      window.clearTimeout(fallback)
+    }
+  }, [value, reduce])
   return (
     <span ref={ref} className="tabular">
       {format(shown)}
