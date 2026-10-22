@@ -77,6 +77,25 @@ export function Hero() {
   const [saveData] = useState(() => Boolean((navigator as Navigator & { connection?: { saveData?: boolean } }).connection?.saveData))
   const useVideo = !reduce && !saveData
   const [videoReady, setVideoReady] = useState(false)
+  const videoRef = useRef<HTMLVideoElement>(null)
+
+  // React doesn't render `muted` as an attribute, so browsers can refuse to autoplay.
+  // Mute and start the video ourselves, and catch a 'ready' event that fired before we listened.
+  useEffect(() => {
+    const v = videoRef.current
+    if (!v) return
+    v.muted = true
+    v.defaultMuted = true
+    const show = () => setVideoReady(true)
+    if (v.readyState >= 3) show()
+    v.addEventListener('canplay', show)
+    v.addEventListener('playing', show)
+    v.play().catch(() => {})
+    return () => {
+      v.removeEventListener('canplay', show)
+      v.removeEventListener('playing', show)
+    }
+  }, [useVideo])
   const { scrollYProgress } = useScroll({ target: ref, offset: ['start start', 'end start'] })
   const imgY = useTransform(scrollYProgress, [0, 1], ['0%', '14%'])
   const imgScale = useTransform(scrollYProgress, [0, 1], [1.08, 1.22])
@@ -133,7 +152,7 @@ export function Hero() {
           playsInline
           preload="auto"
           aria-hidden="true"
-          onCanPlay={() => setVideoReady(true)}
+          ref={videoRef}
           style={{ y: imgY, scale: imgScale }}
           initial={{ opacity: 0 }}
           animate={{ opacity: videoReady ? 1 : 0 }}
