@@ -1,5 +1,5 @@
 import { motion, useReducedMotion, useScroll, useTransform } from 'motion/react'
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { revealLine, staggerContainer } from '@/animations/variants'
 import { LinkButton } from '@/components/ui/Button'
 import { useStoreSettings } from '@/features/store/hooks'
@@ -73,6 +73,10 @@ export function Hero() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const light = useRef({ x: 0, y: 0 })
   const reduce = useReducedMotion() ?? false
+  // Video banner, except for reduced-motion users and data-saver connections, who get the still photo.
+  const [saveData] = useState(() => Boolean((navigator as Navigator & { connection?: { saveData?: boolean } }).connection?.saveData))
+  const useVideo = !reduce && !saveData
+  const [videoReady, setVideoReady] = useState(false)
   const { scrollYProgress } = useScroll({ target: ref, offset: ['start start', 'end start'] })
   const imgY = useTransform(scrollYProgress, [0, 1], ['0%', '14%'])
   const imgScale = useTransform(scrollYProgress, [0, 1], [1.08, 1.22])
@@ -119,16 +123,35 @@ export function Hero() {
 
   return (
     <section ref={ref} className="relative flex min-h-[100svh] items-end overflow-hidden bg-[#120f13] pt-28 [--lx:62%] [--ly:38%] sm:min-h-[600px] md:h-[min(96svh,880px)] md:min-h-[600px] md:pt-0" aria-label="Unique Lights">
-      <motion.img
-        src="/images/hero-living.jpg"
-        alt="A dark blue living room with a velvet daybed lit by a brass floor lamp"
-        fetchPriority="high"
-        style={reduce ? undefined : { y: imgY, scale: imgScale }}
-        initial={{ opacity: 0, scale: 1.18 }}
-        animate={{ opacity: 1, scale: 1.08 }}
-        transition={{ duration: 1.4, ease: [0.22, 1, 0.36, 1] }}
-        className="absolute inset-x-0 -top-[6%] h-[112%] w-full object-cover"
-      />
+      {useVideo ? (
+        // Muted + playsInline + loop is what lets the banner video autoplay on phones.
+        <motion.video
+          src="/videos/hero.mp4"
+          autoPlay
+          muted
+          loop
+          playsInline
+          preload="auto"
+          aria-hidden="true"
+          onCanPlay={() => setVideoReady(true)}
+          style={{ y: imgY, scale: imgScale }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: videoReady ? 1 : 0 }}
+          transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1] }}
+          className="absolute inset-x-0 -top-[6%] h-[112%] w-full object-cover"
+        />
+      ) : (
+        <motion.img
+          src="/images/hero-living.jpg"
+          alt="A dark blue living room with a velvet daybed lit by a brass floor lamp"
+          fetchPriority="high"
+          style={reduce ? undefined : { y: imgY, scale: imgScale }}
+          initial={{ opacity: 0, scale: 1.18 }}
+          animate={{ opacity: 1, scale: 1.08 }}
+          transition={{ duration: 1.4, ease: [0.22, 1, 0.36, 1] }}
+          className="absolute inset-x-0 -top-[6%] h-[112%] w-full object-cover"
+        />
+      )}
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_560px_at_var(--lx)_var(--ly),transparent_0%,rgba(10,7,10,0.62)_80%)]" />
       <div className="pointer-events-none absolute inset-0 mix-blend-screen bg-[radial-gradient(circle_360px_at_var(--lx)_var(--ly),rgba(255,184,104,0.34),rgba(255,184,104,0.08)_45%,transparent_70%)]" />
       <canvas ref={canvasRef} className="pointer-events-none absolute inset-0 size-full" aria-hidden="true" />

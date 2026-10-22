@@ -112,7 +112,8 @@ function useNavLinks() {
   const top = (categories ?? []).filter((c) => c.productCount > 0).slice(0, 2)
   return [
     { to: '/products?isNew=true', label: 'New in' },
-    ...top.map((c) => ({ to: `/categories/${c.slug}`, label: c.name })),
+    // The second category link only appears on wide screens so the bar never wraps.
+    ...top.map((c, i) => ({ to: `/categories/${c.slug}`, label: c.name, wideOnly: i > 0 })),
     { to: '/products?featured=true', label: 'Bestsellers' },
   ]
 }
@@ -165,7 +166,7 @@ export function Header({ overlay = false }: { overlay?: boolean }) {
 
         <Logo tone={onDark ? 'onDark' : 'auto'} />
 
-        <nav aria-label="Main" className="ml-8 hidden items-center gap-7 lg:flex">
+        <nav aria-label="Main" className="ml-6 hidden items-center gap-6 lg:flex xl:ml-8 xl:gap-7">
           <MegaMenu onDark={onDark} />
           {navLinks.map((l) => (
             <NavLink
@@ -173,7 +174,8 @@ export function Header({ overlay = false }: { overlay?: boolean }) {
               to={l.to}
               className={({ isActive }) =>
                 cn(
-                  'group relative py-2 text-[0.9rem] transition-colors hover:text-ink',
+                  'group relative whitespace-nowrap py-2 text-[0.9rem] transition-colors hover:text-ink',
+                  'wideOnly' in l && l.wideOnly && 'hidden xl:inline-block',
                   // NavLink ignores the query string, so links like /products?isNew=true also compare it.
                   isActive && location.search === (l.to.split('?')[1] ? `?${l.to.split('?')[1]}` : location.search)
                     ? 'text-ink'
